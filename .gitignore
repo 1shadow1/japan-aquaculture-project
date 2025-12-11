@@ -1,0 +1,63 @@
+# ============================================
+# Git忽略文件配置
+# ============================================
+
+# 配置文件（包含敏感信息）
+config/database.conf
+config/*.conf
+!config/*.conf.example
+
+# 数据文件
+data/raw/**
+data/processed/**
+data/annotations/**
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/annotations/.gitkeep
+
+# 日志文件
+logs/**
+*.log
+!logs/.gitkeep
+
+# 临时文件
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE配置
+.idea/
+.vscode/
+*.iml
+
+# 备份文件
+*.bak
+*.backup
+backup/
+
+# Python相关（如果使用）
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv
+
+# Node.js相关（如果使用）
+node_modules/
+npm-debug.log
+yarn-error.log
+
+
+
+
+

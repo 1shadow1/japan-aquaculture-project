@@ -1,0 +1,30 @@
+# ============================================
+# 数据库配置文件示例
+# 复制此文件为 database.conf 并修改相应配置
+# ============================================
+
+[mysql]
+# MySQL连接配置
+host = localhost
+port = 3306
+user = root
+password = your_password_here
+database = aquaculture
+charset = utf8mb4
+
+# 连接池配置
+max_connections = 10
+connection_timeout = 30
+
+# 时区配置
+timezone = Asia/Tokyo
+
+# 日志配置
+log_queries = true
+log_slow_queries = true
+slow_query_threshold = 1.0
+
+
+
+
+
