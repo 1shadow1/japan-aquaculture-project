@@ -526,6 +526,7 @@ async def delete_chat_history(
 
 
 # WebSocket 路由
+# 支持两个路径：/ 和 /ws
 @app.websocket("/")
 async def websocket_endpoint(websocket: WebSocket):
     """
@@ -533,7 +534,7 @@ async def websocket_endpoint(websocket: WebSocket):
     
     连接示例：
     ```javascript
-    const ws = new WebSocket('ws://your-server:8001/');
+    const ws = new WebSocket('ws://your-server:8000/');
     ws.onopen = () => {
         ws.send(JSON.stringify({message: '查询最近的水温数据'}));
     };
@@ -809,6 +810,13 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.close()
         except:
             pass
+
+
+# 添加 /ws 路径支持（与 / 路径使用相同的处理逻辑）
+@app.websocket("/ws")
+async def websocket_endpoint_ws(websocket: WebSocket):
+    """WebSocket 端点 - /ws 路径（与 / 路径相同）"""
+    await websocket_endpoint(websocket)
 
 
 if __name__ == "__main__":

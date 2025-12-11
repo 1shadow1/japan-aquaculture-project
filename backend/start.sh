@@ -55,5 +55,6 @@ mkdir -p logs
 
 # 启动服务
 echo -e "${GREEN}启动服务...${NC}"
-python3 -m uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+# 使用配置中的端口（默认8000），支持HTTP和WebSocket
+python3 -m uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --reload
 

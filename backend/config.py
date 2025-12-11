@@ -67,8 +67,7 @@ class Settings(BaseSettings):
     
     # 服务配置
     HOST: str = "0.0.0.0"
-    PORT: int = 8000
-    WS_PORT: int = 8001  # WebSocket 端口
+    PORT: int = 8000  # HTTP 和 WebSocket 统一使用此端口
     DEBUG: bool = False
     
     # 日志配置
