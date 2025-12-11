@@ -79,6 +79,12 @@ class Settings(BaseSettings):
     MAX_RETRY_COUNT: int = 3
     ENABLE_AI_ANALYSIS: bool = True
     
+    # 外部专家服务配置（参考 cognitive_model/tools/tools.json）
+    EXPERT_API_BASE_URL: Optional[str] = "http://localhost:5001"  # 专家API基础地址，默认: "http://localhost:5001"
+    EXPERT_API_KEY: Optional[str] = None  # 专家API密钥（可选）
+    EXPERT_API_TIMEOUT: int = 60  # 专家API超时时间（秒），SSE流式响应需要更长时间
+    ENABLE_EXPERT_CONSULTATION: bool = True  # 是否启用专家咨询
+    
     @property
     def database_url(self) -> str:
         """构建数据库连接URL"""

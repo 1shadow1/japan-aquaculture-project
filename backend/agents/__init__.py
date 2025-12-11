@@ -2,6 +2,7 @@
 from .intent_agent import IntentAgent
 from .routing_agent import RoutingAgent
 from .thinking_agent import ThinkingAgent
+from .query_rewriter import QueryRewriter
 
-__all__ = ["IntentAgent", "RoutingAgent", "ThinkingAgent"]
+__all__ = ["IntentAgent", "RoutingAgent", "ThinkingAgent", "QueryRewriter"]
 

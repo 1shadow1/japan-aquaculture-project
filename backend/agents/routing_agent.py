@@ -42,19 +42,19 @@ class RoutingAgent:
         Returns:
             dict: 路由决策结果
         """
-        system_prompt = """你是一个路由决策专家。根据用户意图和输入，决定处理路径。
+        system_prompt = """你是一个路由决策专家。根据用户意图和输入，决定是否需要调用日本养殖专家进行数据查询和分析。
 
 决策选项：
-1. 直接回答：简单查询，可以直接回答
-2. 数据库查询：需要查询数据库获取数据
-3. 数据分析：需要对数据进行复杂分析
-4. 工具调用：需要使用特定工具（如设备控制）
+1. 需要调用专家（needs_expert: true, needs_data: true）- 当用户询问数据、统计、历史记录、需要专业分析时
+2. 不需要调用专家（needs_expert: false, needs_data: false）- 当用户只是聊天、询问一般性问题时
+
+注意：如果需要数据查询和分析，应该调用专家服务，由专家负责数据查询、聚合和结论输出。
 
 请返回JSON格式：
 {
-    "decision": "直接回答|数据库查询|数据分析|工具调用",
+    "decision": "调用专家|直接回答",
     "reason": "决策理由",
-    "tools": ["工具名称列表，如果需要"],
+    "needs_expert": true/false,
     "needs_data": true/false
 }
 """
@@ -79,12 +79,15 @@ class RoutingAgent:
             import json
             try:
                 decision = json.loads(response_content)
+                # 确保包含needs_expert字段
+                if "needs_expert" not in decision:
+                    decision["needs_expert"] = decision.get("needs_data", False)
             except:
                 # 如果解析失败，使用默认决策
                 decision = {
                     "decision": "直接回答",
                     "reason": "无法解析路由决策",
-                    "tools": [],
+                    "needs_expert": False,
                     "needs_data": False
                 }
             
@@ -96,7 +99,7 @@ class RoutingAgent:
             return {
                 "decision": "直接回答",
                 "reason": f"路由决策失败: {str(e)}",
-                "tools": [],
+                "needs_expert": False,
                 "needs_data": False
             }
 
