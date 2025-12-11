@@ -4,7 +4,7 @@
 LLM 工具函数 - 参考 cognitive_model/agents/llm_utils.py
 """
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Callable, Awaitable
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
@@ -60,11 +60,18 @@ def format_config_for_llm(model_config: Optional[Dict[str, Any]] = None) -> LLMC
 async def execute_llm_call(
     messages: List,
     config: Optional[LLMConfig] = None,
-    stream: bool = False
+    stream: bool = False,
+    stream_callback: Optional[Callable[[str], Awaitable[None]]] = None
 ) -> tuple[str, Dict[str, Any]]:
     """
     执行 LLM 调用
     
+    Args:
+        messages: 消息列表
+        config: LLM 配置
+        stream: 是否流式返回
+        stream_callback: 流式回调函数，接收 (chunk: str) -> None
+        
     Returns:
         tuple: (response_content, stats_dict)
     """
@@ -79,12 +86,15 @@ async def execute_llm_call(
     
     try:
         if stream:
-            # 流式调用 - 收集所有块后返回完整内容
-            # 注意：如果需要真正的流式输出，需要修改为生成器或回调函数
+            # 流式调用 - 支持真正的逐块输出
             chunks = []
             async for chunk in llm.astream(messages):
                 if hasattr(chunk, 'content') and chunk.content:
-                    chunks.append(chunk.content)
+                    chunk_content = chunk.content
+                    chunks.append(chunk_content)
+                    # 如果提供了回调函数，立即调用（真正的流式输出）
+                    if stream_callback:
+                        await stream_callback(chunk_content)
             response_content = "".join(chunks)
         else:
             # 非流式调用

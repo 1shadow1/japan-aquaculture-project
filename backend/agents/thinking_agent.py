@@ -4,7 +4,7 @@
 思考智能体 - 参考 cognitive_model/agents/thinking_agent.py
 """
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Callable, Awaitable
 
 from .llm_utils import execute_llm_call, LLMConfig, format_messages_for_llm, format_config_for_llm
 from langchain_core.messages import HumanMessage
@@ -30,7 +30,8 @@ class ThinkingAgent:
         memory: Optional[List[Dict[str, str]]] = None,
         tool_results: Optional[List[Dict[str, Any]]] = None,
         model_config: Optional[Dict[str, Any]] = None,
-        stream: bool = False
+        stream: bool = False,
+        stream_callback: Optional[Callable[[str], Awaitable[None]]] = None
     ) -> tuple[str, Dict[str, Any]]:
         """
         思考并生成回答
@@ -42,6 +43,7 @@ class ThinkingAgent:
             tool_results: 工具执行结果
             model_config: 模型配置
             stream: 是否流式返回
+            stream_callback: 流式回调函数，接收 (chunk: str) -> None，用于真正的流式输出
             
         Returns:
             tuple: (回答内容, 统计信息)
@@ -78,7 +80,12 @@ class ThinkingAgent:
         messages.append(HumanMessage(content=user_prompt))
         
         try:
-            response_content, stats = await execute_llm_call(messages, config, stream=stream)
+            response_content, stats = await execute_llm_call(
+                messages, 
+                config, 
+                stream=stream,
+                stream_callback=stream_callback
+            )
             
             logger.info("思考智能体生成回答成功")
             return response_content, stats

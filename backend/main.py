@@ -798,7 +798,7 @@ async def websocket_endpoint(websocket: WebSocket):
                                         ]
                                     })
                 
-                    # 5. 生成 AI 回答（流式返回，与原项目流程一致）
+                    # 5. 生成 AI 回答（真正的流式返回，逐块发送）
                     import uuid
                     assistant_message_id = str(uuid.uuid4())
                     assistant_timestamp = int(datetime.now().timestamp())
@@ -810,8 +810,29 @@ async def websocket_endpoint(websocket: WebSocket):
                         **context,
                     }
                     
-                    # 累积 AI 回答内容
+                    # 累积 AI 回答内容（用于最后保存到数据库）
                     assistant_content = ""
+                    
+                    # 定义流式回调函数，用于逐块发送消息
+                    async def stream_chunk_callback(chunk: str):
+                        """流式回调函数，每收到一个块就立即发送给前端"""
+                        nonlocal assistant_content
+                        assistant_content += chunk  # 累积内容
+                        
+                        # 立即发送流式消息块（与原项目格式一致）
+                        stream_response = {
+                            "type": MsgType.STREAM_CHUNK,
+                            "data": {
+                                "session_id": session_id,
+                                "content": chunk,  # 只发送当前块
+                                "event": "content",
+                                "message_id": assistant_message_id,
+                                "role": "assistant",
+                                "timestamp": assistant_timestamp,
+                                "type": "stream_chunk",
+                            }
+                        }
+                        await websocket.send_text(json.dumps(stream_response, ensure_ascii=False))
                     
                     # 如果专家咨询成功，使用专家的回答作为主要输入
                     if expert_response and expert_response.get("success"):
@@ -820,34 +841,15 @@ async def websocket_endpoint(websocket: WebSocket):
                         thinking_context["expert_confidence"] = expert_response.get("confidence", 0.0)
                         thinking_context["expert_sources"] = expert_response.get("sources", [])
                         
-                        # 基于专家的回答生成最终回答（流式）
-                        # 注意：这里需要修改 thinking_agent 支持流式输出
+                        # 基于专家的回答生成最终回答（真正的流式输出）
                         analysis, stats = await thinking_agent.think(
                             user_input=f"用户问题：{user_message}\n\n专家回答：{expert_response.get('answer', '')}",  # 将专家回答作为输入
                             context=thinking_context,
                             memory=history,  # 传入历史记录
                             tool_results=None,  # 专家已经处理了数据查询，不需要tool_results
                             stream=True,  # 启用流式输出
+                            stream_callback=stream_chunk_callback,  # 传入流式回调函数
                         )
-                        
-                        # 流式发送 AI 回答（模拟流式，实际应该逐块发送）
-                        # 为了简化，先一次性发送完整内容，后续可以优化为真正的流式
-                        assistant_content = str(analysis) if analysis is not None else ""
-                        
-                        # 发送流式消息块（与原项目格式一致）
-                        stream_response = {
-                            "type": MsgType.STREAM_CHUNK,
-                            "data": {
-                                "session_id": session_id,
-                                "content": assistant_content,
-                                "event": "content",
-                                "message_id": assistant_message_id,
-                                "role": "assistant",
-                                "timestamp": assistant_timestamp,
-                                "type": "stream_chunk",
-                            }
-                        }
-                        await websocket.send_text(json.dumps(stream_response, ensure_ascii=False))
                     else:
                         # 如果没有专家回答，使用数据查询结果（如果有）
                         analysis, stats = await thinking_agent.think(
@@ -856,25 +858,12 @@ async def websocket_endpoint(websocket: WebSocket):
                             memory=history,  # 传入历史记录
                             tool_results=tool_results if tool_results else None,
                             stream=True,  # 启用流式输出
+                            stream_callback=stream_chunk_callback,  # 传入流式回调函数
                         )
-                        
-                        # 流式发送 AI 回答
-                        assistant_content = str(analysis) if analysis is not None else ""
-                        
-                        # 发送流式消息块（与原项目格式一致）
-                        stream_response = {
-                            "type": MsgType.STREAM_CHUNK,
-                            "data": {
-                                "session_id": session_id,
-                                "content": assistant_content,
-                                "event": "content",
-                                "message_id": assistant_message_id,
-                                "role": "assistant",
-                                "timestamp": assistant_timestamp,
-                                "type": "stream_chunk",
-                            }
-                        }
-                        await websocket.send_text(json.dumps(stream_response, ensure_ascii=False))
+                    
+                    # 确保 assistant_content 包含完整内容（如果回调没有正确累积，使用 analysis 作为后备）
+                    if not assistant_content and analysis:
+                        assistant_content = str(analysis)
                     
                     # 6. 保存 AI 回答到历史记录
                     save_message(
