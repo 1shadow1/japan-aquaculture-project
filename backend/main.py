@@ -690,6 +690,22 @@ async def websocket_endpoint(websocket: WebSocket):
                     # 累积 AI 回答内容（用于最后保存到数据库）
                     assistant_content = ""
                     
+                    # 发送流式输出开始事件
+                    stream_start_response = {
+                        "type": MsgType.STREAM_CHUNK,
+                        "data": {
+                            "session_id": session_id,
+                            "content": "",
+                            "event": "start",
+                            "message_id": assistant_message_id,
+                            "role": "assistant",
+                            "timestamp": assistant_timestamp,
+                            "type": "stream_chunk",
+                        }
+                    }
+                    await websocket.send_text(json.dumps(stream_start_response, ensure_ascii=False))
+                    logger.debug(f"发送流式输出开始事件: message_id={assistant_message_id}")
+                    
                     # 定义流式回调函数，用于逐块发送消息
                     async def stream_chunk_callback(chunk: str):
                         """流式回调函数，每收到一个块就立即发送给前端"""
@@ -758,6 +774,22 @@ async def websocket_endpoint(websocket: WebSocket):
                     # 确保 assistant_content 包含完整内容（如果回调没有正确累积，使用 analysis 作为后备）
                     if not assistant_content and analysis:
                         assistant_content = str(analysis)
+                    
+                    # 发送流式输出结束事件
+                    stream_end_response = {
+                        "type": MsgType.STREAM_CHUNK,
+                        "data": {
+                            "session_id": session_id,
+                            "content": "",
+                            "event": "end",
+                            "message_id": assistant_message_id,
+                            "role": "assistant",
+                            "timestamp": int(datetime.now().timestamp()),
+                            "type": "stream_chunk",
+                        }
+                    }
+                    await websocket.send_text(json.dumps(stream_end_response, ensure_ascii=False))
+                    logger.debug(f"发送流式输出结束事件: message_id={assistant_message_id}")
                     
                     # 6. 保存 AI 回答到历史记录
                     save_message(

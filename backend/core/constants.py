@@ -37,6 +37,8 @@ class MsgType:
     INIT_RESPONSE = "init"  # 注意：与客户端请求类型相同
     NEW_CHAT_MESSAGE = "newChatMessage"
     STREAM_CHUNK = "stream_chunk"  # 流式消息块
+    STREAM_START = "stream_start"  # 流式输出开始事件
+    STREAM_END = "stream_end"  # 流式输出结束事件
     UPDATE_CONFIG_ACK = "updateConfig_ack"
     GET_SESSION_TOPIC_RESPONSE = "getSessionTopicResponse"
 
